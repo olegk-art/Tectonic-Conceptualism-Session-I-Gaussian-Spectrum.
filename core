@@ -1,0 +1,141 @@
+# -*- coding: utf-8 -*-
+import random
+import math
+import re
+import hashlib
+
+text_manifest = [
+    "След за лучом. Рука больше не ведет инструмент и не диктует трек.",
+    "Материал не трогают. Его возбуждают на расстоянии бесконтактным загаром.",
+    "Три действующих лица: Напряжение (источник), Апертура (я), Луч (агент).",
+    "Не используй химию. Элементы удерживаются силой скрытого магнетизма.",
+    "Портал держит Пустоту в мире. Отчуждение Базы материализует изъятие.",
+    "Ядро хранит Память. Физически вырезанная рама остается эталоном автора.",
+    "Матрица спинов — первоисточник состояний покоя. Чистая безмолвная масса.",
+    "Нет эскиза, нет замысла. Есть только направление и восприимчивость.",
+    "Авторский след отсутствует. Result — документ взаимодействия.",
+    "Мир стремится к Абсолютному Нулю. Сумма шрама и пустоты всегда константна."
+]
+
+TOTAL_WIDTH = 440.0
+TOTAL_HEIGHT = 190.0
+
+OFFSET_X = 98.824
+OFFSET_Y = 40.0 
+
+PANEL_WIDTH = 74.117
+PANEL_HEIGHT = 90.0
+GAP = 10.0
+
+W1_X1, W1_X2 = 98.824, 172.941
+W2_X1, W2_X2 = 182.941, 257.058
+W3_X1, W3_X2 = 267.058, 341.175
+
+P1_START, P1_END = W1_X1 + 3.0, W1_X2 - 3.0
+P2_START, P2_END = W2_X1 + 3.0, W2_X2 - 3.0
+P3_START, P3_END = W3_X1 + 3.0, W3_X2 - 3.0
+
+y_start = OFFSET_Y + 10.0 + 10.0
+y_step = 7.5
+num_rows = 10
+
+svg_elements = []
+random.seed(42)
+
+# PHASE I
+for _ in range(2500):
+    x1 = random.uniform(P1_START, P1_END)
+    y1 = random.uniform(OFFSET_Y + 10.0 + 4.0, OFFSET_Y + 10.0 + PANEL_HEIGHT - 4.0)
+    progress = (x1 - P1_START) / PANEL_WIDTH
+    if random.random() < (1.0 - progress * 0.6):
+        length = random.uniform(0.3, 1.2) * (1.0 - progress * 0.7)
+        angle = random.uniform(0, 2 * math.pi) * (1.0 - progress)
+        x2 = x1 + length * math.cos(angle)
+        y2 = y1 + length * math.sin(angle)
+        
+        line_str = f'    <line x1="{x1:.2f}" y1="{y1:.2f}" '
+        line_str += f'x2="{x2:.2f}" y2="{y2:.2f}" '
+        line_str += 'stroke="#000000" stroke-width="0.15"/>\n'
+        svg_elements.append(line_str)
+
+# PHASE II (GUE)
+for row_idx in range(num_rows):
+    y_base = y_start + (row_idx * y_step)
+    row_seed = int(hashlib.md5(text_manifest[row_idx].encode('utf-8')).hexdigest(), 16) % 100000
+    random.seed(row_seed)
+    
+    num_levels = 24
+    eigenvalues = []
+    current_val = 0.0
+    for _ in range(num_levels):
+        spacing = random.gammavariate(2.0, 1.0)
+        current_val += spacing
+        eigenvalues.append(current_val)
+        
+    max_val = eigenvalues[-1] if eigenvalues else 1.0
+    p2_width = P2_END - P2_START - 4.0
+    
+    for val_idx, ev in enumerate(eigenvalues):
+        norm_pos = ev / max_val
+        gauss_pos = 0.5 + 0.5 * math.erf((norm_pos - 0.5) * 2.2)
+        x_pos = P2_START + 2.0 + (gauss_pos * p2_width)
+        
+        if x_pos >= P2_END - 1.0: break
+            
+        num_lines = random.randint(3, 8)
+        stroke_w = 0.08 + (random.random() * 0.28)
+        
+        for _ in range(num_lines):
+            dx = random.uniform(-0.1, 0.1)
+            dy = random.uniform(-2.5, 2.5) 
+            x1_val = x_pos + dx
+            y1_val = y_base + dy
+            
+            line_str = f'    <line x1="{x1_val:.2f}" y1="{y1_val:.2f}" '
+            line_str += f'x2="{x1_val:.2f}" y2="{(y1_val + 0.8):.2f}" '
+            line_str += f'stroke="#000000" stroke-width="{stroke_w:.2f}"/>\n'
+            svg_elements.append(line_str)
+
+# PHASE III
+random.seed(42)
+for row_idx in range(num_rows):
+    y_base = y_start + (row_idx * y_step)
+    for x in range(int(P3_START), int(P3_END), 1):
+        progress = (x - P3_START) / (P3_END - P3_START)
+        density = int(5 * math.exp(-progress * 4.8))
+        for _ in range(density):
+            y1 = random.gauss(y_base, 0.5 * (1.0 - progress * 0.5))
+            length = random.uniform(0.5, 2.5) * (1.0 - progress * 0.8)
+            
+            line_str = f'    <line x1="{x:.2f}" y1="{y1:.2f}" '
+            line_str += f'x2="{(x + length):.2f}" y2="{y1:.2f}" '
+            line_str += 'stroke="#000000" stroke-width="0.12"/>\n'
+            svg_elements.append(line_str)
+
+cut_elements = [
+    f"""    <rect x="0.0" y="0.0" width="{TOTAL_WIDTH}" height="{TOTAL_HEIGHT}" />""",
+    f"""    <rect x="{W1_X1}" y="{OFFSET_Y + 10.0}" width="74.117" height="{PANEL_HEIGHT}" />""",
+    f"""    <rect x="{W2_X1}" y="{OFFSET_Y + 10.0}" width="74.117" height="{PANEL_HEIGHT}" />""",
+    f"""    <rect x="{W3_X1}" y="{OFFSET_Y + 10.0}" width="74.117" height="{PANEL_HEIGHT}" />"""
+]
+
+# АКТИВАЦИЯ ЖИВОГО ДИНАМИЧЕСКОГО РАСЧЕТА SHA-256 ДЛЯ ЯДРА
+raw_code_data = "".join(svg_elements) + "Edition 2/2 | Core | Fabriano Elle Erre 220g Perla | Micro GUE Quantum Matrix Fixed"
+final_core_hash = hashlib.sha256(raw_code_data.encode('utf-8')).hexdigest()
+
+with open("core_three_phases_final.svg", "w", encoding="utf-8") as f:
+    f.write('<?xml version="1.0" encoding="utf-8"?>\n')
+    f.write(f'<svg version="1.1" xmlns="http://w3.org" width="{TOTAL_WIDTH}mm" height="{TOTAL_HEIGHT}mm" viewBox="0 0 {TOTAL_WIDTH} {TOTAL_HEIGHT}">\n')
+    f.write('  <g id="Laser_Engrave" fill="none" stroke="#000000" stroke-linecap="round">\n')
+    for element in svg_elements: f.write(element)
+    f.write('  </g>\n')
+    f.write('  <g id="Laser_Cut" fill="none" stroke="#FF0000" stroke-width="0.1">\n')
+    for element in cut_elements: f.write(element + '\n')
+    f.write('  </g>\n')
+    f.write(f'  <text x="{OFFSET_X}" y="{TOTAL_HEIGHT - 5.0}" font-family="monospace" font-size="1.8" fill="#000000">LEDGER_ID // MATRIX: {final_core_hash}</text>\n')
+    f.write('</svg>')
+
+print("=================== COMPILATION SUCCESSFUL ===================")
+print("Файл ЯДРА 'core_three_phases_final.svg' успешно сгенерирован.")
+print(f"ЖИВОЙ ЧЕСТНЫЙ ХЭШ ЯДРА (MATRIX): {final_core_hash}")
+print("==============================================================")
