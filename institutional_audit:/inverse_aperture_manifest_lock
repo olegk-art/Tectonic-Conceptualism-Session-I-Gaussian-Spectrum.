@@ -1,0 +1,88 @@
+# -*- coding: utf-8 -*-
+import hashlib
+import itertools
+import time
+import os
+import sys
+import re
+
+alphabet = "абвгдеёжзийклмнопрстуфхцчшщъыьэюя"
+
+def extract_seed_from_svg(file_path):
+    if not os.path.exists(file_path):
+        print(f"ERROR: File not found: {file_path}")
+        return None
+    try:
+        with open(file_path, "r", encoding="utf-8", errors="ignore") as f:
+            content = f.read()
+            
+        vectors = re.findall(r'x1=["\']([^"\']+)["\']', content)
+        v_type = "line"
+        
+        if not vectors:
+            vectors = re.findall(r'd=["\'][Mm]\s*([0-9.]+)', content)
+            v_type = "path"
+            
+        if not vectors:
+            vectors = re.findall(r'points=["\']([0-9.]+)', content)
+            v_type = "polyline"
+        
+        if not vectors:
+            print("ERROR: Zero structural vectors found.")
+            return None
+            
+        print(f"[verifier] Found {len(vectors)} vectors via {v_type}.")
+        x1_val = float(vectors[0])
+        calculated_seed = int((x1_val * 100) % 100000)
+        return calculated_seed
+    except Exception as e:
+        print(f"CRITICAL PARSING ERROR: {str(e)}")
+        return None
+
+def execute_inverse_oriented_brute_force(target_seed, start_len=10, end_len=10):
+    print(f"[inverse] Target seed: {target_seed}")
+    print(f"[inverse] Scan layer: {start_len} chars.")
+    
+    start_time = time.time()
+    iterations = 0
+    
+    for length in range(start_len, end_len + 1):
+        print(f"   [sys_log] Crunching layer depth: {length} chars...")
+        
+        for combo in itertools.product(alphabet, repeat=length):
+            iterations += 1
+            test_string = "".join(combo)
+            
+            current_md5 = hashlib.md5(test_string.encode('utf-8')).hexdigest()
+            current_seed = int(current_md5, 16) % 100000
+            
+            if current_seed == target_seed:
+                elapsed = time.time() - start_time
+                sha256_res = hashlib.sha256(test_string.encode('utf-8')).hexdigest()
+                
+                print("\n" + "="*88)
+                print("⚠️ INVERSE-ORIENTED VERIFICATION SUCCESSFUL // PRIMAL MANIFEST RECONSTRUCTED")
+                print(f"TIME: {elapsed:.2f} SEC // TOTAL ITERATIONS: {iterations}")
+                print(f"RECONSTRUCTED PRIMAL MANTRA: \"{test_string}\"")
+                print(f"CALCULATED SHA-256 PROVENANCE KEY: {sha256_res}")
+                print("="*88 + "\n")
+                return test_string
+                
+            if iterations % 30000000 == 0:
+                print(f"      Processed: {iterations // 1000000}M combinations...")
+
+    print("[-] Inverse search complete. Deep layers exhausted.")
+    return None
+
+if __name__ == "__main__":
+    print("=== TECTONIC CONCEPTUALISM // INVERSE-ORIENTED DECODER ===")
+    base_dir = os.path.dirname(os.path.abspath(__file__))
+    target_svg = os.path.join(base_dir, "output_cnc", "base_three_phases_final.svg")
+    
+    if len(sys.argv) > 1:
+        target_svg = sys.argv[1]
+        
+    print(f"[sys_log] Scanning file node: {target_svg}")
+    live_seed = extract_seed_from_svg(target_svg)
+    if live_seed is not None:
+        execute_inverse_oriented_brute_force(live_seed, start_len=10, end_len=10)

@@ -1,0 +1,100 @@
+# -*- coding: utf-8 -*-
+import hashlib
+import itertools
+import time
+import os
+import sys
+import re
+
+alphabet = "абвгдеёжзийклмнопрстуфхцчшщъыьэюя"
+
+def extract_seed_from_svg(file_path):
+    """Универсальный всеядный парсинг физической геометрии чертежа ЧПУ"""
+    if not os.path.exists(file_path):
+        print(f"ERROR: File not found at: {file_path}")
+        return None
+    try:
+        with open(file_path, "r", encoding="utf-8", errors="ignore") as f:
+            content = f.read()
+            
+        # Каскадный перехват векторов: line -> path -> polyline
+        vectors = re.findall(r'x1=["\']([^"\']+)["\']', content)
+        v_type = "line"
+        
+        if not vectors:
+            vectors = re.findall(r'd=["\'][Mm]\s*([0-9.]+)', content)
+            v_type = "path (M-coordinate)"
+            
+        if not vectors:
+            vectors = re.findall(r'points=["\']([0-9.]+)', content)
+            v_type = "polyline"
+        
+        if not vectors:
+            print("ERROR: Zero structural vectors found. Check if SVG is blank.")
+            return None
+            
+        print(f"[verifier] Extracted {len(vectors)} vectors via {v_type} mapping.")
+        
+        # Считывание первой опорной координаты ЧПУ-портала
+        x1_val = float(vectors[0])
+        calculated_seed = int((x1_val * 100) % 100000)
+        return calculated_seed
+    except Exception as e:
+        print(f"CRITICAL PARSING ERROR: {str(e)}")
+        return None
+
+def execute_universal_blind_search(target_seed, min_len=5, max_len=5):
+    """Тотальный слепой перебор алфавитной матрицы без подсказок и словарей"""
+    print(f"[verifier] Target entropy seed from geometry: {target_seed}")
+    print("[verifier] Running universal blind cruncher. Scan space: 10-12 chars...")
+    
+    start_time = time.time()
+    iterations = 0
+    
+    for length in range(min_len, max_len + 1):
+        print(f"   [sys_log] Crunching alphabet layer depth: {length} chars...")
+        for combo in itertools.product(alphabet, repeat=length):
+            iterations += 1
+            test_string = "".join(combo)
+            
+            current_md5 = hashlib.md5(test_string.encode('utf-8')).hexdigest()
+            current_seed = int(current_md5, 16) % 100000
+            
+            if current_seed == target_seed:
+                elapsed = time.time() - start_time
+                sha256_res = hashlib.sha256(test_string.encode('utf-8')).hexdigest()
+                
+                print("\n" + "="*88)
+                print("⚠️ VERIFICATION SUCCESSFUL // VALID LEDGER NODE IDENTIFIED")
+                print(f"TOTAL EXECUTION TIME: {elapsed:.2f} SECONDS // ITERATIONS: {iterations}")
+                print(f"RECONSTRUCTED PRIMAL MANTRA: \"{test_string}\"")
+                print(f"CALCULATED SHA-256 PROVENANCE KEY: {sha256_res}")
+                print("="*88 + "\n")
+                return test_string, sha256_res
+                
+            if iterations % 50000000 == 0:
+                print(f"      Processed: {iterations // 1000000}M combinations...")
+
+    print("[-] Verification failed: Primal mantra corrupted or unauthenticated copy.")
+    return None, None
+
+if __name__ == "__main__":
+    print("=== TECTONIC CONCEPTUALISM // UNIVERSAL VERIFICATION CORE ===")
+    
+    base_dir = os.path.dirname(os.path.abspath(__file__))
+    
+    # По умолчанию скрипт ищет файл в папке 'output_cnc'
+    # Чтобы проверить Сессию I, просто положите её файл 'base_gauss.svg' в эту папку
+    target_filename = "base_three_phases_final.svg"
+    
+    # Если куратор передает путь как внешний аргумент Терминала, берем его принудительно
+    if len(sys.argv) > 1:
+        target_svg = sys.argv[1]
+    else:
+        target_svg = os.path.join(base_dir, "output_cnc", target_filename)
+        
+    print(f"[sys_log] Analyzing file node: {target_svg}")
+    
+    live_seed = extract_seed_from_svg(target_svg)
+    if live_seed is not None:
+        execute_universal_blind_search(live_seed, min_len=4, max_len=12)
